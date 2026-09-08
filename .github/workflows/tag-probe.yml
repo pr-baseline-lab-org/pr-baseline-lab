@@ -1,0 +1,12 @@
+name: Tag probe
+# Proves which actor's tag pushes fire workflows: none for GITHUB_TOKEN, one run for a PAT.
+on:
+  push:
+    tags: ['pr-baseline']
+permissions: {}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: printf 'actor=%s ref=%s\n' "${{ github.actor }}" "${{ github.ref }}"
