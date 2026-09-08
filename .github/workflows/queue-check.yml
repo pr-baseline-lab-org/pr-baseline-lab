@@ -1,0 +1,9 @@
+name: Lab queue check
+on: [pull_request, merge_group]
+permissions: {}
+jobs:
+  queue-check:
+    name: Lab queue check
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo lab queue check
