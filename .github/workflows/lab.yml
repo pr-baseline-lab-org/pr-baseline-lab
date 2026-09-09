@@ -1,0 +1,158 @@
+name: Lab
+# One dispatch input per action input, plus the token kind and the checkout shape.
+# Every run prints every output as JSON and uploads it with the results file.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        type: string
+        default: ''
+      sha:
+        type: string
+        default: ''
+      base:
+        type: string
+        default: ''
+      baselines:
+        type: string
+        default: ''
+      name:
+        type: string
+        default: ''
+      label:
+        type: string
+        default: ''
+      markers:
+        type: string
+        default: ''
+      baseline:
+        type: string
+        default: ''
+      status-context:
+        type: string
+        default: ''
+      description-pass:
+        type: string
+        default: ''
+      description-fail:
+        type: string
+        default: ''
+      description-not-applicable:
+        type: string
+        default: ''
+      target-url:
+        type: string
+        default: ''
+      other-bases:
+        type: string
+        default: ''
+      creator:
+        type: string
+        default: ''
+      ancestry:
+        type: string
+        default: ''
+      max-writes-per-run:
+        type: string
+        default: ''
+      max-writes-per-minute:
+        type: string
+        default: ''
+      dry-run:
+        type: string
+        default: ''
+      force:
+        type: string
+        default: ''
+      refresh-pr-statuses-after-move:
+        type: string
+        default: ''
+      token-kind:
+        type: choice
+        default: github
+        options: [github, pat, pat-no-statuses]
+      checkout:
+        type: choice
+        default: none
+        options: [none, treeless, shallow]
+permissions: {}
+env:
+  PR_BASELINES: '[{"name":"pr-baseline","label":"Require PR update","markers":[".nvmrc",".github/versions.txt"]},{"name":"baseline/docs","scope":["docs/"],"markers":["docs/CONFIG"]}]'
+jobs:
+  lab:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      statuses: write
+      pull-requests: read
+    concurrency:
+      group: pr-baseline-refresh
+      cancel-in-progress: false
+    steps:
+      - if: ${{ inputs.checkout == 'treeless' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
+          filter: tree:0
+          persist-credentials: false
+      - if: ${{ inputs.checkout == 'shallow' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 1
+          persist-credentials: false
+      - id: pr-baseline
+        continue-on-error: true
+        uses: pr-baseline-lab-org/pr-baseline-action-lab@v0
+        with:
+          token: ${{ inputs.token-kind == 'pat' && secrets.LAB_PAT || inputs.token-kind == 'pat-no-statuses' && secrets.LAB_PAT_NO_STATUSES || github.token }}
+          mode: ${{ inputs.mode || 'auto' }}
+          sha: ${{ inputs.sha }}
+          base: ${{ inputs.base }}
+          baselines: ${{ inputs.baselines || (inputs.name == '' && inputs.label == '' && inputs.markers == '' && env.PR_BASELINES) || '' }}
+          name: ${{ inputs.name }}
+          label: ${{ inputs.label }}
+          markers: ${{ inputs.markers }}
+          baseline: ${{ inputs.baseline }}
+          status-context: ${{ inputs.status-context }}
+          description-pass: ${{ inputs.description-pass }}
+          description-fail: ${{ inputs.description-fail }}
+          description-not-applicable: ${{ inputs.description-not-applicable }}
+          target-url: ${{ inputs.target-url }}
+          other-bases: ${{ inputs.other-bases }}
+          creator: ${{ inputs.creator }}
+          ancestry: ${{ inputs.ancestry }}
+          max-writes-per-run: ${{ inputs.max-writes-per-run }}
+          max-writes-per-minute: ${{ inputs.max-writes-per-minute }}
+          dry-run: ${{ inputs.dry-run || 'false' }}
+          force: ${{ inputs.force || 'false' }}
+          refresh-pr-statuses-after-move: ${{ inputs.refresh-pr-statuses-after-move || 'true' }}
+      - name: Record outputs
+        if: ${{ always() }}
+        env:
+          OUTCOME: ${{ steps.pr-baseline.outcome }}
+          OUTPUTS: ${{ toJSON(steps.pr-baseline.outputs) }}
+          INPUTS: ${{ toJSON(inputs) }}
+        run: |
+          mkdir -p lab-out
+          printf '%s' "$OUTPUTS" > lab-out/outputs.json
+          printf '%s' "$INPUTS" > lab-out/inputs.json
+          printf '%s\n' "$OUTCOME" > lab-out/outcome.txt
+          echo "outcome=$OUTCOME"
+          cat lab-out/outputs.json
+      # The results file path is an output; the shell reads it through env to avoid injection.
+      - name: Copy the results file
+        if: ${{ always() && steps.pr-baseline.outputs.results-file != '' }}
+        env:
+          RESULTS_FILE: ${{ steps.pr-baseline.outputs.results-file }}
+        run: cp "$RESULTS_FILE" lab-out/results.json
+      - if: ${{ always() }}
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        with:
+          name: lab-${{ github.run_id }}
+          path: lab-out
+      - name: Fail the run when the action failed
+        if: ${{ steps.pr-baseline.outcome == 'failure' }}
+        run: exit 1
