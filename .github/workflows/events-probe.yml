@@ -1,0 +1,30 @@
+name: Events probe
+# Observes the auto-mode mappings the consumer template filters out: every push and pull_request.
+# Writes only the "PR baseline probe" context so it never touches the real one. Enabled per row.
+on: [pull_request, push]
+permissions: {}
+env:
+  PR_BASELINES: '[{"name":"pr-baseline","label":"Require PR update","markers":[".nvmrc",".github/versions.txt"]},{"name":"baseline/docs","scope":["docs/"],"markers":["docs/CONFIG"]}]'
+jobs:
+  probe:
+    if: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      statuses: write
+    concurrency:
+      group: events-probe-${{ github.run_id }}
+      cancel-in-progress: false
+    steps:
+      - id: pr-baseline
+        continue-on-error: true
+        uses: pr-baseline-lab-org/pr-baseline-action-lab@v0
+        with:
+          base: main
+          baselines: ${{ env.PR_BASELINES }}
+          status-context: PR baseline probe
+      - if: ${{ always() }}
+        env:
+          OUTPUTS: ${{ toJSON(steps.pr-baseline.outputs) }}
+        run: printf 'outcome=%s\n%s\n' "${{ steps.pr-baseline.outcome }}" "$OUTPUTS"
