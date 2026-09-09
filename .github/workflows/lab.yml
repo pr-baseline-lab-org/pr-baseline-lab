@@ -16,7 +16,7 @@ on:
       baselines:
         type: string
         default: ''
-      tag:
+      name:
         type: string
         default: ''
       label:
@@ -77,7 +77,7 @@ on:
         options: [none, treeless, shallow]
 permissions: {}
 env:
-  PR_BASELINES: '[{"tag":"pr-baseline","label":"Require PR update","markers":[".nvmrc",".github/versions.txt"]},{"tag":"baseline/docs","scope":["docs/"],"markers":["docs/CONFIG"]}]'
+  PR_BASELINES: '[{"name":"pr-baseline","label":"Require PR update","markers":[".nvmrc",".github/versions.txt"]},{"name":"baseline/docs","scope":["docs/"],"markers":["docs/CONFIG"]}]'
 jobs:
   lab:
     runs-on: ubuntu-latest
@@ -111,8 +111,8 @@ jobs:
           mode: ${{ inputs.mode || 'auto' }}
           sha: ${{ inputs.sha }}
           base: ${{ inputs.base }}
-          baselines: ${{ inputs.baselines || (inputs.tag == '' && inputs.label == '' && inputs.markers == '' && env.PR_BASELINES) || '' }}
-          tag: ${{ inputs.tag }}
+          baselines: ${{ inputs.baselines || (inputs.name == '' && inputs.label == '' && inputs.markers == '' && env.PR_BASELINES) || '' }}
+          name: ${{ inputs.name }}
           label: ${{ inputs.label }}
           markers: ${{ inputs.markers }}
           baseline: ${{ inputs.baseline }}
