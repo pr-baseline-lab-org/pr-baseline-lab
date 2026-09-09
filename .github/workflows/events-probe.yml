@@ -4,7 +4,7 @@ name: Events probe
 on: [pull_request, push]
 permissions: {}
 env:
-  PR_BASELINES: '[{"tag":"pr-baseline","label":"Require PR update","markers":[".nvmrc",".github/versions.txt"]},{"tag":"baseline/docs","scope":["docs/"],"markers":["docs/CONFIG"]}]'
+  PR_BASELINES: '[{"name":"pr-baseline","label":"Require PR update","markers":[".nvmrc",".github/versions.txt"]},{"name":"baseline/docs","scope":["docs/"],"markers":["docs/CONFIG"]}]'
 jobs:
   probe:
     if: true
