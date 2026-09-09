@@ -1,0 +1,11 @@
+name: Ref probe
+# Records which ref pushes start workflows: branches do, a push to refs/baselines/* never does, whatever the actor.
+on:
+  push:
+permissions: {}
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: printf 'actor=%s ref=%s\n' "${{ github.actor }}" "${{ github.ref }}"
