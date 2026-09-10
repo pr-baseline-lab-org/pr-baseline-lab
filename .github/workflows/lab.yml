@@ -28,6 +28,9 @@ on:
       baseline:
         type: string
         default: ''
+      scope:
+        type: string
+        default: ''
       status-context:
         type: string
         default: ''
@@ -116,6 +119,7 @@ jobs:
           label: ${{ inputs.label }}
           markers: ${{ inputs.markers }}
           baseline: ${{ inputs.baseline }}
+          scope: ${{ inputs.scope }}
           status-context: ${{ inputs.status-context }}
           description-pass: ${{ inputs.description-pass }}
           description-fail: ${{ inputs.description-fail }}
