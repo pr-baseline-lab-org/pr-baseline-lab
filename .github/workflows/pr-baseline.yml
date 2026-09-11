@@ -51,7 +51,6 @@ jobs:
       - id: pr-baseline
         uses: pr-baseline-lab-org/pr-baseline-action-lab@v0
         with:
-          token: ${{ secrets.LAB_PAT }}
           base: main
           baselines: ${{ env.PR_BASELINES }}
       - name: Record outputs (lab only)
@@ -99,7 +98,6 @@ jobs:
       - id: pr-baseline
         uses: pr-baseline-lab-org/pr-baseline-action-lab@v0
         with:
-          token: ${{ secrets.LAB_PAT }}
           base: main
           baselines: ${{ env.PR_BASELINES }}
           mode: ${{ inputs.mode || 'auto' }}
