@@ -146,8 +146,13 @@ jobs:
           printf '%s\n' "$OUTCOME" > lab-out/outcome.txt
           echo "outcome=$OUTCOME"
           cat lab-out/outputs.json
-          # The REST API does not expose a job summary, and each step writes its own file in this directory.
-          cat "$(dirname "$GITHUB_STEP_SUMMARY")"/step_summary_* > lab-out/summary.md 2>/dev/null || true
+          # The REST API does not expose a job summary, so the runner's own files are what the lab reads.
+          for file in "$(dirname "$GITHUB_STEP_SUMMARY")"/step_summary_*; do
+            if [ -s "$file" ]; then
+              printf '<!-- %s -->\n' "${file##*/}"
+              cat "$file"
+            fi
+          done > lab-out/summary.md
       # The results file path is an output; the shell reads it through env to avoid injection.
       - name: Copy the results file
         if: ${{ always() && steps.pr-baseline.outputs.results-file != '' }}
